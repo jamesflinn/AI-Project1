@@ -15,10 +15,31 @@ public class AstarAgent extends Agent {
 
     class MapLocation {
         public int x, y;
+        public float cost;
+        public MapLocation cameFrom;
 
         public MapLocation(int x, int y, MapLocation cameFrom, float cost) {
             this.x = x;
             this.y = y;
+            this.cameFrom = cameFrom;
+            this.cost = cost;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+
+            MapLocation that = (MapLocation) o;
+
+            return x == that.x && y == that.y;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = x;
+            result = 31 * result + y;
+            return result;
         }
     }
 
@@ -275,8 +296,126 @@ public class AstarAgent extends Agent {
      * @return Stack of positions with top of stack being first move in plan
      */
     private Stack<MapLocation> AstarSearch(MapLocation start, MapLocation goal, int xExtent, int yExtent, MapLocation enemyFootmanLoc, Set<MapLocation> resourceLocations) {
-        // return an empty path
-        return new Stack<MapLocation>();
+        List<MapLocation> openList = new ArrayList<>();
+        List<MapLocation> closedList = new ArrayList<>();
+
+        System.out.println("Resource locations: " + resourceLocations);
+        MapLocation loc = new MapLocation(2, 0, null, 0);
+        MapLocation loc2= new MapLocation(2, 0, null, 1.0f);
+        System.out.println(resourceLocations.contains(loc));
+        System.out.println(loc.equals(loc2));
+
+        start.cost = calculateChebyshevDistance(start, goal);
+        openList.add(start);
+
+        while (!openList.isEmpty()) {
+            MapLocation current = selectMinCost(openList);
+
+            if (current.equals(goal)) {
+                return reconstructPath(current);
+            }
+
+            openList.remove(current);
+            closedList.add(current);
+            List<MapLocation> neighbors = getNeighbors(current, resourceLocations, xExtent, yExtent);
+
+            for (MapLocation neighbor : neighbors) {
+                if (closedList.contains(neighbor)) {
+                    continue;
+                }
+
+                float cost = current.cost + calculateChebyshevDistance(neighbor, goal);
+
+                if (!openList.contains(neighbor)) {
+                    openList.add(neighbor);
+                } else if (cost >= openList.get(openList.indexOf(neighbor)).cost) {
+                    continue;
+                }
+
+                neighbor.cost = cost;
+                neighbor.cameFrom = current;
+            }
+            closedList.add(current);
+        }
+
+        return null;
+    }
+
+    /**
+     * Given current and goal locations, returns the Chebyshev distance.
+     * @param current  Current position of the footman
+     * @param goal     MapLocation of the townhall
+     * @return The Chebyshev distance
+     */
+    private float calculateChebyshevDistance(MapLocation current, MapLocation goal) {
+        return Math.max(goal.x - current.x, goal.y - current.y);
+    }
+
+    /**
+     * Finds and returns the MapLocation with the smallest cost.
+     */
+    private MapLocation selectMinCost(List<MapLocation> locations) {
+        MapLocation min = locations.get(0);
+        for (MapLocation location : locations) {
+            if (location.cost < min.cost) {
+                min = location;
+            }
+        }
+        return min;
+    }
+
+    /**
+     * Given a MapLocation, returns all possible valid neighbors that the footman can move to.
+     * @param location Current position of the footman
+     * @param xExtent  Width of the map
+     * @param yExtent  Height of the map
+     * @return All valid move positions
+     */
+    private List<MapLocation> getNeighbors(MapLocation location, Set<MapLocation> resourceLocations, int xExtent, int yExtent) {
+        List<MapLocation> validNeighbors = new ArrayList<>();
+        MapLocation[] allNeighbors = {
+                new MapLocation(location.x - 1, location.y - 1, null, 0),
+                new MapLocation(location.x,     location.y - 1, null, 0),
+                new MapLocation(location.x + 1, location.y - 1, null, 0),
+                new MapLocation(location.x - 1, location.y,     null, 0),
+                new MapLocation(location.x + 1, location.y,     null, 0),
+                new MapLocation(location.x - 1, location.y + 1, null, 0),
+                new MapLocation(location.x,     location.y + 1, null, 0),
+                new MapLocation(location.x + 1, location.y + 1, null, 0)
+        };
+
+        for (MapLocation neighbor : allNeighbors) {
+            // If the neighbor is out of bounds or contains a resource, don't add to valid neighbors
+            if (neighbor.x < 0 ||
+                    neighbor.y < 0 ||
+                    neighbor.x >= xExtent ||
+                    neighbor.y >= yExtent ||
+                    resourceLocations.contains(neighbor)) {
+                continue;
+            }
+
+            validNeighbors.add(neighbor);
+        }
+
+        return validNeighbors;
+    }
+
+    /**
+     * Given the goal node, returns the path from the initial node to the goal node.
+     * @param goal Location of the townhall
+     * @return Stack of positions with top of stack being first move in plan
+     */
+    private Stack<MapLocation> reconstructPath(MapLocation goal) {
+        Stack<MapLocation> path = new Stack<>();
+
+        MapLocation current = goal;
+        while (current.cameFrom != null) {
+            System.out.println("Path: (" + current.x + ", " + current.y + ")");
+            path.add(current.cameFrom);
+            current = current.cameFrom;
+        }
+
+        return path;
     }
 
     /**
