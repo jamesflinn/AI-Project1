@@ -311,7 +311,7 @@ public class AstarAgent extends Agent {
 
             openList.remove(current);
             closedList.add(current);
-            List<MapLocation> neighbors = getNeighbors(current, resourceLocations, xExtent, yExtent);
+            List<MapLocation> neighbors = getNeighbors(current, enemyFootmanLoc, resourceLocations, xExtent, yExtent);
 
             for (MapLocation neighbor : neighbors) {
                 if (closedList.contains(neighbor)) {
@@ -365,7 +365,7 @@ public class AstarAgent extends Agent {
      * @param yExtent  Height of the map
      * @return All valid move positions
      */
-    private List<MapLocation> getNeighbors(MapLocation location, Set<MapLocation> resourceLocations, int xExtent, int yExtent) {
+    private List<MapLocation> getNeighbors(MapLocation location, MapLocation enemyFootmanLocation, Set<MapLocation> resourceLocations, int xExtent, int yExtent) {
         List<MapLocation> validNeighbors = new ArrayList<>();
         MapLocation[] allNeighbors = {
                 new MapLocation(location.x - 1, location.y - 1, null, 0),
@@ -384,6 +384,7 @@ public class AstarAgent extends Agent {
                     neighbor.y < 0 ||
                     neighbor.x >= xExtent ||
                     neighbor.y >= yExtent ||
+                    neighbor.equals(enemyFootmanLocation) ||
                     resourceLocations.contains(neighbor)) {
                 continue;
             }
