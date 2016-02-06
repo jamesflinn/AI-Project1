@@ -299,12 +299,6 @@ public class AstarAgent extends Agent {
         List<MapLocation> openList = new ArrayList<>();
         List<MapLocation> closedList = new ArrayList<>();
 
-        System.out.println("Resource locations: " + resourceLocations);
-        MapLocation loc = new MapLocation(2, 0, null, 0);
-        MapLocation loc2= new MapLocation(2, 0, null, 1.0f);
-        System.out.println(resourceLocations.contains(loc));
-        System.out.println(loc.equals(loc2));
-
         start.cost = calculateChebyshevDistance(start, goal);
         openList.add(start);
 
