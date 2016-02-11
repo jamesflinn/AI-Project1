@@ -47,8 +47,11 @@ public class AstarAgent extends Agent {
     int footmanID, townhallID, enemyFootmanID;
     MapLocation nextLoc;
 
+    private Stack<MapLocation> lastPath = null;
+
     private long totalPlanTime = 0; // nsecs
     private long totalExecutionTime = 0; //nsecs
+
 
     public AstarAgent(int playernum) {
         super(playernum);
@@ -214,6 +217,7 @@ public class AstarAgent extends Agent {
      * @return
      */
     private boolean shouldReplanPath(State.StateView state, History.HistoryView history, Stack<MapLocation> currentPath) {
+        // No footman mode.
         if (enemyFootmanID == -1) {
             return false;
         }
@@ -221,8 +225,17 @@ public class AstarAgent extends Agent {
         Unit.UnitView enemyFootmanUnit = state.getUnit(enemyFootmanID);
         MapLocation enemyFootmanLoc = new MapLocation(enemyFootmanUnit.getXPosition(), enemyFootmanUnit.getYPosition(), null, 0);
 
-        return currentPath.contains(enemyFootmanLoc);
+        // If the footman is in the way, we should recalculate
+        if (currentPath.contains(enemyFootmanLoc)) {
+            lastPath = currentPath;
+            return true;
+        } else if (!(lastPath == null) &&
+                !(lastPath.contains(enemyFootmanLoc))) {
+            lastPath = null;
+            return true;
+        }
 
+        return false;
     }
 
     /**
